@@ -56,12 +56,14 @@ def fetch_update() -> None:
     with TemporaryDirectory() as tmpdir:
         tmp_dir = Path(tmpdir)
         try:
+            fileName: str
             fileName, header = request.urlretrieve(url=url.format(version), filename=tmp_dir.joinpath(program_path))
         except HTTPError as e:
             print(e.code)
             print(fileName, '##')
             sys.exit(2)
         run_updater(fileName)
+        remove_update_executable(fileName)
     return None
 
 
@@ -80,10 +82,14 @@ def any_options_supplied():
         return False
 
 
-def run_updater(fileName):
-    subprocess.call([fileName])
-    Path(fileName).unlink()
+def run_updater(filename: str):
+    subprocess.call([filename])
+
+
+def remove_update_executable(filename: str) -> None:
+    Path(filename).unlink()
 
 
 if __name__ == '__main__':
+    # print(sys.argv)
     fetch_update()
