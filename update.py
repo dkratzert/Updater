@@ -4,11 +4,13 @@
 #  this notice you can do whatever you want with this stuff. If we meet some day,
 #  and you think this stuff is worth it, you can buy me a beer in return.
 #  ----------------------------------------------------------------------------
+import hashlib
 import os
 import subprocess
 import sys
 from pathlib import Path
 from urllib import request
+from urllib.error import HTTPError
 
 import progressbar as progressbar
 
@@ -64,14 +66,57 @@ def fetch_update() -> None:
     if finalcif_is_still_running():
         sys.exit(3)
     tmp_dir = Path(__file__).parent
-    fileName, header = request.urlretrieve(url=url.format(version), filename=tmp_dir.joinpath(program_path),
-                                           reporthook=show_progress)
-    run_updater(fileName)
+    try:
+        print('Downloading setup file from:', url.format(version))
+        file_name, header = request.urlretrieve(url=url.format(version), filename=tmp_dir.joinpath(program_path),
+                                                reporthook=show_progress)
+    except HTTPError as e:
+        check_for_404_error(e)
+        return None
+    if is_checksum_valid(file_name, url.format(version)):
+        print('Checksum OK')
+        run_updater(file_name)
+    else:
+        print('Checksum Failed. Aborting update!')
+        return None
     return None
 
 
+def is_checksum_valid(setupfile, sha_url):
+    # download SHA file:
+    sha_url = str(sha_url)[:-4] + '-sha512.sha'
+    print('Downloading sha file from:', sha_url)
+    try:
+        shafile, header = request.urlretrieve(url=sha_url)
+    except HTTPError as e:
+        check_for_404_error(e)
+        return False
+    # Checksum for program package:
+    sha = sha512_checksum(setupfile)
+    if sha == Path(shafile).read_text():
+        return True
+    else:
+        return False
+
+
+def check_for_404_error(e):
+    if e.code == 404:
+        print('Could not download file!')
+
+
+def sha512_checksum(filename, block_size=65536):
+    """
+    Calculates a SHA512 checksum from a file.
+    """
+    sha512 = hashlib.sha512()
+    with open(filename, 'rb') as f:
+        for block in iter(lambda: f.read(block_size), b''):
+            sha512.update(block)
+    return sha512.hexdigest()
+
+
 def kill_program_instances(program_name: str):
-    subprocess.call(["taskkill", "/f", "/im", "{}.exe".format(program_name)])
+    subprocess.call(["taskkill", "/f", "/im", "{}.exe".format(program_name)], stdout=0, stderr=0)
 
 
 def finalcif_is_still_running():
