@@ -8,13 +8,13 @@ import os
 import subprocess
 import sys
 from pathlib import Path
-from tempfile import TemporaryDirectory
 from urllib import request
-from urllib.error import HTTPError
+
+import progressbar as progressbar
 
 """
 return codes:
-
+0: regular end
 2: HTTP error 404 (unable to download)
 3: can not kill program instance prior to update
 4: No command line options supplied
@@ -30,15 +30,25 @@ def show_help():
     print('-p name     : Program name')
 
 
-def get_optionindex(option: str):
+def get_options_index(option: str):
     return sys.argv.index(option)
 
 
 def get_option(option: str = '') -> str:
-    if option in sys.argv and get_optionindex(option):
-        value = sys.argv[get_optionindex(option) + 1]
+    if option in sys.argv and get_options_index(option):
+        value = sys.argv[get_options_index(option) + 1]
         return value
     return ''
+
+
+def show_progress(block_num, block_size, total_size):
+    pbar = progressbar.ProgressBar(maxval=total_size)
+    pbar.start()
+    downloaded = block_num * block_size
+    if downloaded < total_size:
+        pbar.update(downloaded)
+    else:
+        pbar.finish()
 
 
 def fetch_update() -> None:
@@ -53,22 +63,15 @@ def fetch_update() -> None:
     kill_program_instances(program_name)
     if finalcif_is_still_running():
         sys.exit(3)
-    with TemporaryDirectory() as tmpdir:
-        tmp_dir = Path(tmpdir)
-        try:
-            fileName: str
-            fileName, header = request.urlretrieve(url=url.format(version), filename=tmp_dir.joinpath(program_path))
-        except HTTPError as e:
-            print(e.code)
-            print(fileName, '##')
-            sys.exit(2)
-        run_updater(fileName)
-        remove_update_executable(fileName)
+    tmp_dir = Path(__file__).parent
+    fileName, header = request.urlretrieve(url=url.format(version), filename=tmp_dir.joinpath(program_path),
+                                           reporthook=show_progress)
+    run_updater(fileName)
     return None
 
 
 def kill_program_instances(program_name: str):
-    os.system("taskkill /f /im {}.exe 2> nul".format(program_name))
+    subprocess.call(["taskkill", "/f", "/im", "{}.exe".format(program_name)])
 
 
 def finalcif_is_still_running():
@@ -83,7 +86,7 @@ def any_options_supplied():
 
 
 def run_updater(filename: str):
-    subprocess.call([filename])
+    subprocess.Popen([filename])
 
 
 def remove_update_executable(filename: str) -> None:
@@ -93,3 +96,4 @@ def remove_update_executable(filename: str) -> None:
 if __name__ == '__main__':
     # print(sys.argv)
     fetch_update()
+    sys.exit(0)
