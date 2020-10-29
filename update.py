@@ -73,11 +73,13 @@ def fetch_update() -> None:
     except HTTPError as e:
         check_for_404_error(e)
         return None
+    print('Finished.')
     if is_checksum_valid(file_name, url.format(version)):
         print('Checksum OK')
         run_updater(file_name)
     else:
         print('Checksum Failed. Aborting update!')
+        subprocess.run(["pause"], shell=True)
         return None
     return None
 
@@ -85,9 +87,9 @@ def fetch_update() -> None:
 def is_checksum_valid(setupfile, sha_url):
     # download SHA file:
     sha_url = str(sha_url)[:-4] + '-sha512.sha'
-    print('Downloading sha file from:', sha_url)
+    print('\nDownloading sha file from:', sha_url)
     try:
-        shafile, header = request.urlretrieve(url=sha_url)
+        shafile, header = request.urlretrieve(url=sha_url, reporthook=show_progress)
     except HTTPError as e:
         check_for_404_error(e)
         return False
@@ -116,7 +118,8 @@ def sha512_checksum(filename, block_size=65536):
 
 
 def kill_program_instances(program_name: str):
-    subprocess.call(["taskkill", "/f", "/im", "{}.exe".format(program_name)], stdout=0, stderr=0)
+    subprocess.call(["taskkill", "/f", "/im", "{}.exe".format(program_name)], stdout=0, stderr=0, shell=True)
+    subprocess.call(["cls"], shell=True)
 
 
 def finalcif_is_still_running():
