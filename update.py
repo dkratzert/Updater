@@ -23,7 +23,7 @@ return codes:
 """
 
 urls = {
-    'dsr': 'https://xs3-data.uni-freiburg.de/dsr/DSR-setup-{}.exe',
+    'dsr': 'https://xs3-data.uni-freiburg.de/data/DSR-setup-{}.exe',
     'structurefinder': 'https://xs3-data.uni-freiburg.de/structurefinder/StructureFinder-setup-x64-v{}.exe',
     'finalcif': 'https://xs3-data.uni-freiburg.de/finalcif/FinalCif-setup-x64-v{}.exe',
 }
