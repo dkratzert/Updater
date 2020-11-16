@@ -22,12 +22,16 @@ return codes:
 4: No command line options supplied
 """
 
+urls = {
+    'dsr': 'https://xs3-data.uni-freiburg.de/dsr/DSR-setup-{}.exe',
+    'structurefinder': 'https://xs3-data.uni-freiburg.de/structurefinder/StructureFinder-setup-x64-v{}.exe',
+    'finalcif': 'https://xs3-data.uni-freiburg.de/finalcif/FinalCif-setup-x64-v{}.exe',
+}
+
 
 def show_help():
-    print('############ Program updater V1 #################')
+    print('############ Program updater V2 #################')
     print('Command line options:')
-    print('-url "URL"  : URL to the installer executable with {} for the version number e.g. \n'
-          '              -url "https://xs3-data.uni-freiburg.de/finalcif/FinalCif-setup-x64-v{}.exe"')
     print('-v version  : Version number of the installer executable')
     print('-p name     : Program name')
 
@@ -58,10 +62,14 @@ def fetch_update() -> None:
         show_help()
         os.system('pause')
         sys.exit(4)
-    url = get_option('-url')
     version = get_option('-v')
     program_name = get_option('-p')
-    program_path = Path('update-{}.exe'.format(program_name))
+    url = urls.get(program_name)
+    if not url:
+        print('Unknown program. Aborting update!')
+        return None
+    # This is the program setup that installs the new version:
+    program_path = Path('{}-setup.exe'.format(program_name))
     kill_program_instances(program_name)
     if finalcif_is_still_running():
         sys.exit(3)
