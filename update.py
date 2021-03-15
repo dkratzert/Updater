@@ -36,7 +36,7 @@ download_urls = {
 
 
 def show_help():
-    print('############ Program updater V3 #################')
+    print('############ Program updater V4 #################')
     print('Command line options:')
     print('-v version  : Version number of the installer executable')
     print('-p name     : Program name')
