@@ -25,9 +25,9 @@ return codes:
 download_urls = {
     # The URLs are a list in order to make different locations possible:
     'dsr': ['https://xs3-data.uni-freiburg.de/data/DSR-setup-{}.exe', 
-            'https://github.com/dkratzert/FinalCif/raw/master/DSR-setup-{}.exe'],
+            'https://github.com/dkratzert/DSR/raw/master/DSR-setup-{}.exe'],
     'structurefinder': ['https://xs3-data.uni-freiburg.de/structurefinder/StructureFinder-setup-x64-v{}.exe', 
-                        'https://github.com/dkratzert/FinalCif/raw/master/StructureFinder-setup-x64-v{}.exe'],
+                        'https://github.com/dkratzert/Structurefinder/raw/master/StructureFinder-setup-x64-v{}.exe'],
     'finalcif': ['https://xs3-data.uni-freiburg.de/finalcif/FinalCif-setup-x64-v{}.exe', 
                  'https://github.com/dkratzert/FinalCif/raw/master/FinalCif-setup-x64-v{}.exe'],
     'test': ['https://xs3-data.uni-freiburg.de/test/test-v{}.exe', 
