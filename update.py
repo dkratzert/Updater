@@ -24,22 +24,31 @@ return codes:
 
 download_urls = {
     # The URLs are a list in order to make different locations possible:
-    'dsr': ['https://xs3-data.uni-freiburg.de/data/DSR-setup-{}.exe', 
-            'https://github.com/dkratzert/DSR/raw/master/DSR-setup-{}.exe'],
-    'structurefinder': ['https://xs3-data.uni-freiburg.de/structurefinder/StructureFinder-setup-x64-v{}.exe', 
-                        'https://github.com/dkratzert/Structurefinder/raw/master/StructureFinder-setup-x64-v{}.exe'],
-    'finalcif': ['https://xs3-data.uni-freiburg.de/finalcif/FinalCif-setup-x64-v{}.exe', 
-                 'https://github.com/dkratzert/FinalCif/raw/master/FinalCif-setup-x64-v{}.exe'],
-    'test': ['https://xs3-data.uni-freiburg.de/test/test-v{}.exe', 
-             'https://github.com/dkratzert/FinalCif/raw/master/test-v{}.exe'],
+    'dsr'            : ['https://xs3-data.uni-freiburg.de/data/DSR-setup-{}.exe',
+                        'https://github.com/dkratzert/DSR/raw/master/DSR-setup-{}.exe',
+                        'https://dkratzert.de/files/DSR/DSR-setup-{}.exe'],
+    'structurefinder': ['https://xs3-data.uni-freiburg.de/structurefinder/StructureFinder-setup-x64-v{}.exe',
+                        'https://github.com/dkratzert/Structurefinder/raw/master/StructureFinder-setup-x64-v{}.exe',
+                        'https://dkratzert.de/files/structurefinder/StructureFinder-setup-x64-v{}.exe',
+                        ],
+    'finalcif'       : ['https://xs3-data.uni-freiburg.de/finalcif/FinalCif-setup-x64-v{}.exe',
+                        'https://github.com/dkratzert/FinalCif/raw/master/FinalCif-setup-x64-v{}.exe',
+                        'https://dkratzert.de/files/finalcif/FinalCif-setup-x64-v{}.exe',
+                        ],
+    'test'           : ['https://xs3-data.uni-freiburg.de/test/test-v{}.exe',
+                        'https://github.com/dkratzert/FinalCif/raw/master/test-v{}.exe',
+                        'https://dkratzert.de/files/test-v{}.exe',
+                        ],
 }
 
 
 def show_help():
-    print('############ Program updater V4 #################')
+    print('############ Program updater V5 #################')
     print('Command line options:')
     print('-v version  : Version number of the installer executable')
     print('-p name     : Program name')
+    if platform_is("win"):
+        os.system('pause')
 
 
 def get_options_index(option: str):
@@ -66,12 +75,6 @@ def show_progress(block_num, block_size, total_size):
 def fetch_update() -> None:
     if not any_options_supplied():
         show_help()
-        if platform_is("linux"):
-            pass
-        elif platform_is("darwin"):
-            pass
-        elif platform_is("win"):
-            os.system('pause')
         sys.exit(4)
     version = get_option('-v')
     program_name = get_option('-p')
@@ -85,23 +88,26 @@ def fetch_update() -> None:
     if programm_is_still_running(program_name):
         sys.exit(3)
     tmp_dir = Path(__file__).parent
+    have_downloaded = perform_download(program_path, tmp_dir, urls, version)
+    if have_downloaded:
+        print('Finished successfully.')
+    else:
+        print('Checksum Failed. Update with this file not possible.')
+        print('\nGiving up.')
+        if platform_is("win"):
+            os.system("pause")
+    return None
+
+
+def perform_download(program_path, tmp_dir, urls, version):
     for url in urls:
         file_name = try_download(program_path, tmp_dir, url, version)
         checksum_state = check_checksum(file_name, url, version)
         if checksum_state:
             if run_updater(file_name):
-                print('Finished successfully.')
-                return
+                return True
         else:
-            print('Checksum Failed. Update with this file not possible.')
-    print('\nGiving up.')
-    if platform_is("linux"):
-        pass
-    elif platform_is("darwin"):
-        pass
-    elif platform_is("win"):
-        os.system("pause")
-    return None
+            return False
 
 
 def check_checksum(file_name: str, url: str, version: str):
@@ -116,7 +122,7 @@ def platform_is(plat: str) -> bool:
     return sys.platform.startswith(plat)
 
 
-def try_download(program_path: str, tmp_dir: Path, url: str, version: str):
+def try_download(program_path: Path, tmp_dir: Path, url: str, version: str):
     try:
         print('Downloading setup file from:', url.format(version))
         file_name, header = request.urlretrieve(url=url.format(version),

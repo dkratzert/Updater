@@ -1,2 +1,2 @@
 progressbar
-pyinstaller
+pyinstaller>=4.0
