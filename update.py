@@ -10,10 +10,10 @@ import subprocess
 import sys
 from contextlib import suppress
 from pathlib import Path
-from urllib import request
-from urllib.error import HTTPError
 
-from progressbar import ProgressBar
+import requests as requests
+import tqdm
+from requests import HTTPError
 
 """
 return codes:
@@ -26,7 +26,7 @@ return codes:
 download_urls = {
     # The URLs are a list in order to make different locations possible:
     'dsr'            : [
-        'https://dkratzert.de/files/DSR/DSR-setup-{}.exe',
+        'https://dkratzert.de/files/dsr/DSR-setup-{}.exe',
         'https://xs3-data.uni-freiburg.de/data/DSR-setup-{}.exe',
         'https://github.com/dkratzert/DSR/raw/master/DSR-setup-{}.exe',
     ],
@@ -68,16 +68,6 @@ def get_option(option: str = '') -> str:
     return ''
 
 
-def show_progress(block_num, block_size, total_size) -> None:
-    pbar = ProgressBar(maxval=total_size)
-    pbar.start()
-    downloaded = block_num * block_size
-    if downloaded < total_size:
-        pbar.update(downloaded)
-    else:
-        pbar.finish()
-
-
 def fetch_update() -> None:
     if not any_options_supplied():
         show_help()
@@ -99,7 +89,7 @@ def fetch_update() -> None:
         run_updater(downloaded_update)
         print('Finished successfully.')
     else:
-        print('\nGiving up.')
+        print('\nNo update found. Giving up.')
         if platform_is("win"):
             os.system("pause")
     return None
@@ -109,21 +99,23 @@ def perform_download(program_path, tmp_dir, urls, version) -> str:
     for url in urls:
         full_url = url.format(version)
         print('Downloading setup file from:', full_url)
-        file_name = try_download(program_path, tmp_dir, full_url)
-        checksum_state = check_checksum(file_name, url, version)
+        setup_file_name = try_download(program_path, tmp_dir, full_url)
+        if not setup_file_name:
+            continue
+        checksum_state = check_checksum(setup_file_name, url, version)
         if checksum_state:
-            return file_name
+            return setup_file_name
         else:
             print('Failed to update, trying different URL...\n')
     return ''
 
 
-def check_checksum(file_name: str, url: str, version: str) -> bool:
+def check_checksum(setup_file_name: str, url: str, version: str) -> bool:
     shafile = download_checksum(sha_url=url.format(version))
     if not shafile:
         print('No checksum file found at URL.')
         return False
-    if is_checksum_valid(file_name, shafile=shafile):
+    if is_checksum_valid(setup_file_name, shafile):
         print('Checksum OK')
         return True
     else:
@@ -136,24 +128,29 @@ def platform_is(plat: str) -> bool:
 
 
 def try_download(program_path: Path, tmp_dir: Path, full_url: str) -> str:
-    try:
-        file_name, header = request.urlretrieve(url=full_url,
-                                                filename=tmp_dir.joinpath(program_path),
-                                                reporthook=show_progress)
-    except (HTTPError, ValueError):
-        print('Download failed.')
+    file_name = str(tmp_dir.joinpath(program_path).resolve())
+    response = requests.get(full_url, stream=True)
+    if response.status_code != 200:
         return ''
-    if file_name:
-        print('-> Download succeeded.')
-        return file_name
+    total_size_in_bytes = int(response.headers.get('content-length', 0))
+    block_size = 1024
+    progress_bar = tqdm.tqdm(total=total_size_in_bytes, unit='iB', unit_scale=True)
+    with open(file_name, 'wb') as file:
+        for data in response.iter_content(block_size):
+            progress_bar.update(len(data))
+            file.write(data)
+    progress_bar.close()
+    if total_size_in_bytes != 0 and progress_bar.n != total_size_in_bytes:
+        print("ERROR, something went wrong")
+        return ''
+    return file_name
 
 
-def is_checksum_valid(setupfile: str, shafile: str) -> bool:
+def is_checksum_valid(setupfile: str, sha_from_sha_file: str) -> bool:
     # download SHA file:
-    if shafile:
+    if sha_from_sha_file:
         # Checksum for program package:
         sha_from_setup_file = sha512_checksum(setupfile)
-        sha_from_sha_file = Path(shafile).read_text()
         return checksums_match(sha_from_setup_file, sha_from_sha_file)
     else:
         return False
@@ -163,7 +160,8 @@ def download_checksum(sha_url):
     shafile = ''
     sha_url = str(sha_url)[:-4] + '-sha512.sha'
     with suppress(HTTPError, ValueError):
-        shafile, header = request.urlretrieve(url=sha_url, reporthook=show_progress)
+        response = requests.get(url=sha_url)
+        shafile = response.content.decode('ascii', errors='ignore')
     return shafile
 
 
