@@ -129,7 +129,10 @@ def platform_is(plat: str) -> bool:
 
 def try_download(program_path: Path, tmp_dir: Path, full_url: str) -> str:
     file_name = str(tmp_dir.joinpath(program_path).resolve())
-    response = requests.get(full_url, stream=True)
+    headers = {
+        'User-Agent': 'tiny updater v5',
+    }
+    response = requests.get(full_url, stream=True, headers=headers)
     if response.status_code != 200:
         return ''
     total_size_in_bytes = int(response.headers.get('content-length', 0))
