@@ -126,3 +126,6 @@ dmypy.json
 update-finalcif.exe
 /update.build/
 /update.dist/
+dsr-setup.exe
+finalcif-setup.exe
+structurefinder-setup.exe
