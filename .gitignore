@@ -129,3 +129,9 @@ update-finalcif.exe
 dsr-setup.exe
 finalcif-setup.exe
 structurefinder-setup.exe
+
+
+# Added by cargo
+
+/target
+updater/Cargo.lock
