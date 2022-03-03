@@ -8,10 +8,9 @@ import hashlib
 import os
 import subprocess
 import sys
-from contextlib import suppress
 from pathlib import Path
 
-import requests as requests
+import requests
 import tqdm
 from requests import HTTPError
 
@@ -22,34 +21,31 @@ return codes:
 3: can not kill program instance prior to update
 4: No command line options supplied
 """
+version = '6'
 
 download_urls = {
     # The URLs are a list in order to make different locations possible:
     'dsr'            : [
         'https://dkratzert.de/files/dsr/DSR-setup-{}.exe',
-        'https://xs3-data.uni-freiburg.de/data/DSR-setup-{}.exe',
-        'https://github.com/dkratzert/DSR/raw/master/DSR-setup-{}.exe',
+        # 'https://github.com/dkratzert/DSR/raw/master/DSR-setup-{}.exe',
     ],
     'structurefinder': [
         'https://dkratzert.de/files/structurefinder/StructureFinder-setup-x64-v{}.exe',
-        'https://xs3-data.uni-freiburg.de/structurefinder/StructureFinder-setup-x64-v{}.exe',
-        'https://github.com/dkratzert/Structurefinder/raw/master/StructureFinder-setup-x64-v{}.exe',
+        # 'https://github.com/dkratzert/Structurefinder/raw/master/StructureFinder-setup-x64-v{}.exe',
     ],
     'finalcif'       : [
         'https://dkratzert.de/files/finalcif/FinalCif-setup-x64-v{}.exe',
-        'https://xs3-data.uni-freiburg.de/finalcif/FinalCif-setup-x64-v{}.exe',
-        'https://github.com/dkratzert/FinalCif/raw/master/FinalCif-setup-x64-v{}.exe',
+        # 'https://github.com/dkratzert/FinalCif/raw/master/FinalCif-setup-x64-v{}.exe',
     ],
     'test'           : [
         'https://dkratzert.de/files/test-v{}.exe',
-        'https://xs3-data.uni-freiburg.de/test/test-v{}.exe',
         'https://github.com/dkratzert/FinalCif/raw/master/test-v{}.exe',
     ],
 }
 
 
 def show_help() -> None:
-    print('############ Program updater V5 #################')
+    print('############ Program updater V{} #################'.format(version))
     print('Command line options:')
     print('-v version  : Version number of the installer executable')
     print('-p name     : Program name')
@@ -130,7 +126,7 @@ def platform_is(plat: str) -> bool:
 def try_download(program_path: Path, tmp_dir: Path, full_url: str) -> str:
     file_name = str(tmp_dir.joinpath(program_path).resolve())
     headers = {
-        'User-Agent': 'tiny updater v5',
+        'User-Agent': 'tiny updater v{}'.format(version),
     }
     response = requests.get(full_url, stream=True, headers=headers)
     if response.status_code != 200:
@@ -162,9 +158,11 @@ def is_checksum_valid(setupfile: str, sha_from_sha_file: str) -> bool:
 def download_checksum(sha_url):
     shafile = ''
     sha_url = str(sha_url)[:-4] + '-sha512.sha'
-    with suppress(HTTPError, ValueError):
+    try:
         response = requests.get(url=sha_url)
         shafile = response.content.decode('ascii', errors='ignore')
+    except (HTTPError, ValueError):
+        pass
     return shafile
 
 
