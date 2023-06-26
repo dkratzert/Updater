@@ -8,11 +8,14 @@ import hashlib
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import requests
 import tqdm
 from requests import HTTPError
+
+from src.updater.version import version
 
 """
 return codes:
@@ -21,31 +24,23 @@ return codes:
 3: can not kill program instance prior to update
 4: No command line options supplied
 """
-version = '6'
 
 download_urls = {
     # The URLs are a list in order to make different locations possible:
     'dsr'            : [
         'https://dkratzert.de/files/dsr/DSR-setup-{}.exe',
-        # 'https://github.com/dkratzert/DSR/raw/master/DSR-setup-{}.exe',
     ],
     'structurefinder': [
         'https://dkratzert.de/files/structurefinder/StructureFinder-setup-x64-v{}.exe',
-        # 'https://github.com/dkratzert/Structurefinder/raw/master/StructureFinder-setup-x64-v{}.exe',
     ],
     'finalcif'       : [
         'https://dkratzert.de/files/finalcif/FinalCif-setup-x64-v{}.exe',
-        # 'https://github.com/dkratzert/FinalCif/raw/master/FinalCif-setup-x64-v{}.exe',
-    ],
-    'test'           : [
-        'https://dkratzert.de/files/test-v{}.exe',
-        'https://github.com/dkratzert/FinalCif/raw/master/test-v{}.exe',
     ],
 }
 
 
 def show_help() -> None:
-    print('############ Program updater V{} #################'.format(version))
+    print(f'############ Program updater V{version} #################')
     print('Command line options:')
     print('-v version  : Version number of the installer executable')
     print('-p name     : Program name')
@@ -78,7 +73,9 @@ def fetch_update() -> None:
     program_path = Path('{}-setup.exe'.format(program_name))
     kill_program_instances(program_name)
     if programm_is_still_running(program_name):
-        sys.exit(3)
+        kill_program_instances(program_name)
+        if programm_is_still_running(program_name):
+            sys.exit(3)
     tmp_dir = Path(__file__).parent
     downloaded_update = perform_download(program_path, tmp_dir, urls, version)
     if downloaded_update:
@@ -126,7 +123,7 @@ def platform_is(plat: str) -> bool:
 def try_download(program_path: Path, tmp_dir: Path, full_url: str) -> str:
     file_name = str(tmp_dir.joinpath(program_path).resolve())
     headers = {
-        'User-Agent': 'tiny updater v{}'.format(version),
+        'User-Agent': f'tiny updater v{version}',
     }
     response = requests.get(full_url, stream=True, headers=headers)
     if response.status_code != 200:
@@ -155,9 +152,9 @@ def is_checksum_valid(setupfile: str, sha_from_sha_file: str) -> bool:
         return False
 
 
-def download_checksum(sha_url):
+def download_checksum(sha_url: str) -> str:
     shafile = ''
-    sha_url = str(sha_url)[:-4] + '-sha512.sha'
+    sha_url = f'{str(sha_url)[:-4]}-sha512.sha'
     try:
         response = requests.get(url=sha_url)
         shafile = response.content.decode('ascii', errors='ignore')
@@ -192,6 +189,7 @@ def kill_program_instances(program_name: str) -> None:
     elif platform_is("win"):
         subprocess.call(["taskkill", "/f", "/im", "{}.exe".format(program_name)], stdout=0, stderr=0, shell=True)
         subprocess.call(["cls"], shell=True)
+        time.sleep(1)
 
 
 def programm_is_still_running(program: str) -> bool:
