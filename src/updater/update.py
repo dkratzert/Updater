@@ -15,7 +15,7 @@ import requests
 import tqdm
 from requests import HTTPError
 
-from src.updater.version import version
+version = 7
 
 """
 return codes:
