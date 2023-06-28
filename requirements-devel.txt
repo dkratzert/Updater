@@ -1,0 +1,6 @@
+
+pyinstaller
+pyinstaller-hooks-contrib
+requests
+tqdm
+urllib3

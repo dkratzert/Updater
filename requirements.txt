@@ -1,11 +1,4 @@
 
-altgraph
-certifi
-charset-normalizer
-idna
-macholib
-pyinstaller
-pyinstaller-hooks-contrib
 requests
 tqdm
-urllib3
+

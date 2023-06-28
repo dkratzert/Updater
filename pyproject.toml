@@ -27,7 +27,7 @@ classifiers = [
 "Bug Tracker" = "https://github.com/dkratzert/updater/issues"
 
 [tool.hatch.version]
-path = "src/updater/version.py"
+path = "src/updater/update.py"
 pattern = "version\\s*=\\s*(?P<version>\\d+\\.{0,1}\\d{0,1})"
 
 [tool.hatch.build.targets.sdist]
