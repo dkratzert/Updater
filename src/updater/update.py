@@ -15,7 +15,7 @@ import requests
 import tqdm
 from requests import HTTPError
 
-version = 7
+version = 8
 
 """
 return codes:
@@ -48,7 +48,7 @@ def show_help() -> None:
         os.system('pause')
 
 
-def get_options_index(option: str):
+def get_options_index(option: str) -> int:
     return sys.argv.index(option)
 
 
@@ -72,12 +72,16 @@ def fetch_update() -> None:
     # This is the program setup that installs the new version:
     program_path = Path('{}-setup.exe'.format(program_name))
     kill_program_instances(program_name)
-    if programm_is_still_running(program_name):
+    count = 0
+    while programm_is_still_running(program_name):
+        count += 1
         kill_program_instances(program_name)
-        if programm_is_still_running(program_name):
+        if count == 5:
             sys.exit(3)
     tmp_dir = Path(__file__).parent
     downloaded_update = perform_download(program_path, tmp_dir, urls, version)
+    print('Please wait...')
+    time.sleep(5)
     if downloaded_update:
         run_updater(downloaded_update)
         print('Finished successfully.')
@@ -88,7 +92,7 @@ def fetch_update() -> None:
     return None
 
 
-def perform_download(program_path, tmp_dir, urls, version) -> str:
+def perform_download(program_path: Path, tmp_dir: Path, urls: list[str], version: str) -> str:
     for url in urls:
         full_url = url.format(version)
         print('Downloading setup file from:', full_url)
@@ -189,7 +193,7 @@ def kill_program_instances(program_name: str) -> None:
     elif platform_is("win"):
         subprocess.call(["taskkill", "/f", "/im", "{}.exe".format(program_name)], stdout=0, stderr=0, shell=True)
         subprocess.call(["cls"], shell=True)
-        time.sleep(1)
+        time.sleep(2)
 
 
 def programm_is_still_running(program: str) -> bool:
